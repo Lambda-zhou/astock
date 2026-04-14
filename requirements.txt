@@ -1,0 +1,7 @@
+adata
+pandas
+matplotlib
+sqlalchemy
+gradio
+streamlit
+pymysql

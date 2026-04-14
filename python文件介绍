@@ -1,0 +1,20 @@
+api_search_draw #调api找股并画图
+	api_search_code_draw(short_name)
+	api_search_name_draw(stock_code)
+	
+db_search_draw #调数据库找股并画图
+	database_search_name_draw(short_name)
+	database_search_code_draw(stock_code)
+	
+find_lhs #查股是否在龙虎榜，返回个股龙虎榜数据
+	search_in_lh(stock_code)
+	find_lhb(stock_code)
+	
+
+ths_hot
+	main() #主函数同花顺热榜
+	code_draw(stock_code) #画k线图
+	
+db_connect() #数据库连接
+flush_db #更新数据库
+k_line #画图函数
