@@ -16,9 +16,9 @@ def db_connect():
         return _ENGINE
 
     # 创建数据库引擎
-    db_user = st.db_user
+    db_user = st.secrets["db_user"]
     # 'all_stock'
-    db_password = st.db_password
+    db_password = st.secrets["db_password"]
     # "SySZTdo7Ou5mmP0R"
     db_host = 'mysql2.sqlpub.com'  # 如果您的数据库在其他主机上，请更改为相应的主机名或IP
     db_port = '3307'
