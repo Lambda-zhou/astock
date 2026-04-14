@@ -739,6 +739,8 @@ def main():
         handle_ths_hot()
     elif function_choice == "数据库管理":
         handle_database_management()
+    elif function_choice == "AI问答":
+        handle_ai_chat()
 
 if __name__ == "__main__":
     main()
