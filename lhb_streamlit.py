@@ -535,10 +535,11 @@ def handle_ai_chat():
         else:
             st.caption("当前没有附加上下文。")
 
+    prompt_key = f"ai_user_prompt_{st.session_state.get('ai_prompt_nonce', 0)}"
     user_prompt = st.text_area(
         "输入你的问题",
         placeholder="例如：结合当前股票走势和热榜数据，帮我做一个简要观察。",
-        key="ai_user_prompt",
+        key=prompt_key,
         height=120
     )
 
@@ -551,7 +552,7 @@ def handle_ai_chat():
     if clear_clicked:
         st.session_state.ai_chat_history = []
         st.session_state.ai_last_error = None
-        st.session_state.ai_user_prompt = ""
+        st.session_state.ai_prompt_nonce = st.session_state.get('ai_prompt_nonce', 0) + 1
         st.rerun()
 
     if not send_clicked:
@@ -594,7 +595,7 @@ def handle_ai_chat():
             st.session_state.ai_chat_history.append(
                 {"role": "assistant", "content": response['content'], "timestamp": answer_timestamp}
             )
-            st.session_state.ai_user_prompt = ""
+            st.session_state.ai_prompt_nonce = st.session_state.get('ai_prompt_nonce', 0) + 1
             st.rerun()
         except AIClientError as e:
             st.session_state.ai_last_error = str(e)
@@ -680,6 +681,7 @@ def main():
         'ai_include_hot': False,
         'ai_last_error': None,
         'ai_user_prompt': "",
+        'ai_prompt_nonce': 0,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
