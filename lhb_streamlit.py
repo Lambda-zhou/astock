@@ -531,7 +531,7 @@ def handle_ai_chat():
         st.checkbox("把当前热榜数据作为上下文", key="ai_include_hot")
         context_preview = build_ai_context()
         if context_preview:
-            st.text_area("当前将附带给模型的上下文预览", value=context_preview, height=220, disabled=True)
+            st.text_area("当前将附带给模型的上下文预览", value=context_preview, height=220, disabled=True, key="ai_context_preview")
         else:
             st.caption("当前没有附加上下文。")
 
@@ -544,9 +544,9 @@ def handle_ai_chat():
 
     col1, col2 = st.columns(2)
     with col1:
-        send_clicked = st.button("发送给 AI", type="primary", use_container_width=True)
+        send_clicked = st.button("发送给 AI", type="primary", use_container_width=True, key="ai_send_button")
     with col2:
-        clear_clicked = st.button("清空当前对话", use_container_width=True)
+        clear_clicked = st.button("清空当前对话", use_container_width=True, key="ai_clear_button")
 
     if clear_clicked:
         st.session_state.ai_chat_history = []
@@ -648,7 +648,7 @@ def handle_database_management():
                     st.error(f"数据库更新失败: {str(e)}")
 
 def main():
-    st.title("??????")
+    st.title("股票分析系统")
     st.markdown("---")
 
     if 'first_visit' not in st.session_state:
@@ -656,8 +656,8 @@ def main():
         if IMPORT_EXPLAN:
             explan.show_welcome_message()
         else:
-            st.success("???????????")
-            st.info("??????????????????????????????")
+            st.success("欢迎使用股票分析系统。")
+            st.info("首次使用建议先查看快速帮助，并确认系统状态中的模块加载结果。")
 
     defaults = {
         'query_result': None,
@@ -673,7 +673,7 @@ def main():
         'ai_base_url': "",
         'ai_api_key': "",
         'ai_model': "",
-        'ai_system_prompt': "?????????????????????????????????????",
+        'ai_system_prompt': "你是一个中文股票分析助手。仅基于用户提供的信息和上下文回答，不要编造数据。",
         'ai_temperature': 0.7,
         'ai_timeout': 60,
         'ai_include_stock': True,
@@ -687,13 +687,13 @@ def main():
 
     col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
-        if st.button("?????", help="????????"):
+        if st.button("切换侧边栏", help="隐藏或显示侧边栏", key="main_toggle_sidebar"):
             st.session_state.sidebar_visible = not st.session_state.get('sidebar_visible', True)
     with col2:
-        if st.button("????", help="????????"):
+        if st.button("系统状态", help="查看模块加载状态", key="main_toggle_status"):
             st.session_state.show_status = not st.session_state.get('show_status', False)
     with col3:
-        if st.button("????", help="????????"):
+        if st.button("快速帮助", help="查看基础使用说明", key="main_toggle_help"):
             st.session_state.show_help = not st.session_state.get('show_help', False)
 
     if IMPORT_EXPLAN:
@@ -710,44 +710,44 @@ def main():
             show_status=st.session_state.get('show_status', False)
         )
 
-    function_options = ["?????K??", "?????", "?????", "AI ????", "?????"]
+    function_options = ["股票查询与K线图", "龙虎榜查询", "同花顺热榜", "AI 问答助手", "数据库管理"]
 
     if st.session_state.get('sidebar_visible', True):
-        st.sidebar.title("????")
-        function_choice = st.sidebar.selectbox("??????", function_options)
+        st.sidebar.title("功能选择")
+        function_choice = st.sidebar.selectbox("选择功能模块", function_options, key="sidebar_function_choice")
 
-        with st.sidebar.expander("AI ??", expanded=function_choice == "AI ????"):
-            st.text_input("API Base URL", key="ai_base_url", placeholder="??: https://api.openai.com")
-            st.text_input("API Key", key="ai_api_key", type="password", placeholder="????? API Key")
-            st.text_input("????", key="ai_model", placeholder="??: gpt-4o-mini ? deepseek-chat")
+        with st.sidebar.expander("AI 设置", expanded=function_choice == "AI 问答助手"):
+            st.text_input("API Base URL", key="ai_base_url", placeholder="例如: https://api.openai.com")
+            st.text_input("API Key", key="ai_api_key", type="password", placeholder="输入服务商 API Key")
+            st.text_input("模型名称", key="ai_model", placeholder="例如: gpt-4o-mini 或 deepseek-chat")
             st.slider("Temperature", min_value=0.0, max_value=2.0, step=0.1, key="ai_temperature")
-            st.number_input("???????", min_value=10, max_value=300, step=5, key="ai_timeout")
+            st.number_input("超时时间（秒）", min_value=10, max_value=300, step=5, key="ai_timeout")
             st.text_area("System Prompt", key="ai_system_prompt", height=140)
 
-        if IMPORT_EXPLAN and st.sidebar.checkbox("??????", value=False):
+        if IMPORT_EXPLAN and st.sidebar.checkbox("显示项目介绍", value=False, key="sidebar_show_explan"):
             explan.show_explan()
     else:
-        function_choice = st.selectbox("??????", function_options)
+        function_choice = st.selectbox("选择功能模块", function_options, key="main_function_choice")
 
     stock_code = ""
     short_name = ""
-    if function_choice in ["?????K??", "?????"]:
+    if function_choice in ["股票查询与K线图", "龙虎榜查询"]:
         col1, col2 = st.columns(2)
         with col1:
-            stock_code = st.text_input("????", placeholder="??: 000001, 600519")
+            stock_code = st.text_input("股票代码", placeholder="例如: 000001, 600519", key="main_stock_code")
         with col2:
-            short_name = st.text_input("????", placeholder="??: ????, ????")
+            short_name = st.text_input("股票名称", placeholder="例如: 平安银行, 贵州茅台", key="main_short_name")
         st.markdown("---")
 
-    if function_choice == "?????K??":
+    if function_choice == "股票查询与K线图":
         handle_stock_query(stock_code, short_name)
-    elif function_choice == "?????":
+    elif function_choice == "龙虎榜查询":
         handle_lhb_query(stock_code, short_name)
-    elif function_choice == "?????":
+    elif function_choice == "同花顺热榜":
         handle_ths_hot()
-    elif function_choice == "AI ????":
+    elif function_choice == "AI 问答助手":
         handle_ai_chat()
-    elif function_choice == "?????":
+    elif function_choice == "数据库管理":
         handle_database_management()
 
 
