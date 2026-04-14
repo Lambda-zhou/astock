@@ -5,6 +5,9 @@ import os
 import warnings
 import adata
 import time
+from datetime import datetime
+
+from ai_client import AIClientError, chat_completion
 
 # 导入项目介绍模块
 try:
@@ -154,6 +157,72 @@ def get_stock_name_from_db(stock_code):
     except Exception as e:
         st.error(f"数据库查询股票名称失败: {str(e)}")
         return None
+
+def build_ai_context():
+    """构建 AI 对话上下文。"""
+    context_parts = []
+
+    if st.session_state.get('ai_include_stock') and st.session_state.get('query_result') is not None:
+        stock_df = st.session_state['query_result']
+        stock_name = st.session_state.get('query_stock_name') or '未知'
+        stock_code = st.session_state.get('query_stock_code') or '未知'
+        stock_source = st.session_state.get('query_source') or '未知'
+        context_parts.append(
+            "当前股票查询结果\n"
+            f"股票名称: {stock_name}\n"
+            f"股票代码: {stock_code}\n"
+            f"数据源: {stock_source}\n"
+            f"最近10条数据:\n{stock_df.tail(10).to_csv(index=False)}"
+        )
+
+    if st.session_state.get('ai_include_hot') and st.session_state.get('hot_data') is not None:
+        hot_data = st.session_state['hot_data']
+        if isinstance(hot_data, pd.DataFrame):
+            context_parts.append(f"当前热榜数据预览\n{hot_data.head(20).to_csv(index=False)}")
+        else:
+            context_parts.append(f"当前热榜数据预览\n{hot_data}")
+
+    return "\n\n".join(context_parts).strip()
+
+
+def build_ai_messages():
+    """构建发送给模型的消息。"""
+    messages = []
+    system_prompt = st.session_state.get('ai_system_prompt', '').strip()
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+
+    context_text = build_ai_context()
+    if context_text:
+        messages.append(
+            {
+                "role": "system",
+                "content": f"以下是用户当前在系统中的可用上下文，可按需参考，不要编造未提供的数据。\n\n{context_text}",
+            }
+        )
+
+    for item in st.session_state.get('ai_chat_history', []):
+        messages.append({"role": item["role"], "content": item["content"]})
+
+    return messages
+
+
+def render_ai_message(role, content, timestamp=None):
+    """渲染聊天消息。"""
+    role_map = {"user": "用户", "assistant": "AI", "system": "系统"}
+    safe_content = content.replace("\n", "<br>")
+    time_html = f"<div style='margin-top:8px;color:#666;font-size:12px;'>{timestamp}</div>" if timestamp else ""
+    st.markdown(
+        f"""
+        <div style="padding:12px 14px;margin-bottom:12px;border:1px solid #e6e6e6;border-radius:10px;background:#fafafa;">
+            <div style="font-weight:600;margin-bottom:8px;">{role_map.get(role, role)}</div>
+            <div>{safe_content}</div>
+            {time_html}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 def query_stock_data(stock_code, stock_name, data_source):
     """查询股票数据"""
@@ -441,6 +510,99 @@ def handle_ths_hot():
                         st.error("概念统计功能暂时不可用")
                 except Exception as e:
                     st.error(f"概念统计过程中出现错误: {str(e)}")
+
+def handle_ai_chat():
+    """AI 问答助手。"""
+    st.header("AI 问答助手")
+    st.caption("兼容 OpenAI 风格聊天接口，可在侧边栏配置 Base URL、API Key 和模型。")
+
+    if st.session_state.get('ai_last_error'):
+        st.error(st.session_state['ai_last_error'])
+
+    if st.session_state.get('ai_chat_history'):
+        st.subheader("对话记录")
+        for item in st.session_state['ai_chat_history']:
+            render_ai_message(item['role'], item['content'], item.get('timestamp'))
+    else:
+        st.info("当前还没有对话。先在侧边栏完成接口配置，然后输入问题开始使用。")
+
+    with st.expander("上下文设置", expanded=False):
+        st.checkbox("把当前股票查询结果作为上下文", key="ai_include_stock")
+        st.checkbox("把当前热榜数据作为上下文", key="ai_include_hot")
+        context_preview = build_ai_context()
+        if context_preview:
+            st.text_area("当前将附带给模型的上下文预览", value=context_preview, height=220, disabled=True)
+        else:
+            st.caption("当前没有附加上下文。")
+
+    user_prompt = st.text_area(
+        "输入你的问题",
+        placeholder="例如：结合当前股票走势和热榜数据，帮我做一个简要观察。",
+        key="ai_user_prompt",
+        height=120
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        send_clicked = st.button("发送给 AI", type="primary", use_container_width=True)
+    with col2:
+        clear_clicked = st.button("清空当前对话", use_container_width=True)
+
+    if clear_clicked:
+        st.session_state.ai_chat_history = []
+        st.session_state.ai_last_error = None
+        st.session_state.ai_user_prompt = ""
+        st.rerun()
+
+    if not send_clicked:
+        return
+
+    st.session_state.ai_last_error = None
+
+    if not user_prompt.strip():
+        st.warning("请输入问题后再发送。")
+        return
+
+    if not st.session_state.get('ai_base_url', '').strip():
+        st.warning("请先在侧边栏填写 API Base URL。")
+        return
+
+    if not st.session_state.get('ai_api_key', '').strip():
+        st.warning("请先在侧边栏填写 API Key。")
+        return
+
+    if not st.session_state.get('ai_model', '').strip():
+        st.warning("请先在侧边栏填写模型名称。")
+        return
+
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    st.session_state.ai_chat_history.append(
+        {"role": "user", "content": user_prompt.strip(), "timestamp": timestamp}
+    )
+
+    with st.spinner("AI 正在生成回答..."):
+        try:
+            response = chat_completion(
+                base_url=st.session_state['ai_base_url'],
+                api_key=st.session_state['ai_api_key'],
+                model=st.session_state['ai_model'],
+                messages=build_ai_messages(),
+                temperature=st.session_state.get('ai_temperature', 0.7),
+                timeout=st.session_state.get('ai_timeout', 60),
+            )
+            answer_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            st.session_state.ai_chat_history.append(
+                {"role": "assistant", "content": response['content'], "timestamp": answer_timestamp}
+            )
+            st.session_state.ai_user_prompt = ""
+            st.rerun()
+        except AIClientError as e:
+            st.session_state.ai_last_error = str(e)
+            st.error(f"AI 调用失败: {str(e)}")
+        except Exception as e:
+            st.session_state.ai_last_error = str(e)
+            st.error(f"发生未知错误: {str(e)}")
+
 
 def handle_database_management():
     """处理数据库管理"""
