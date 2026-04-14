@@ -766,7 +766,7 @@ def main():
         'ai_model': "",
         'ai_use_secrets': False,
         'ai_secrets_available': False,
-        'ai_system_prompt': "你是一个中文股票分析助手。仅基于用户提供的信息和上下文回答，不要编造数据。",
+        'ai_system_prompt': "你是一个中文股票分析助手。仅基于用户提供的信息和上下文回答，不要编造数据。当用户指定标的时候，请按照1、标的概况，2、核心业务内容，3、最新的行情（价格），4、财务状况，5、核心看点，最后增加对于这个标的的风险提示。",
         'ai_temperature': 0.7,
         'ai_timeout': 60,
         'ai_include_stock': True,
