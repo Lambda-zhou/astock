@@ -674,7 +674,7 @@ def main():
         'ai_base_url': "",
         'ai_api_key': "",
         'ai_model': "",
-        'ai_system_prompt': "你是一个中文股票分析助手。仅基于用户提供的信息和上下文回答，不要编造数据。",
+        'ai_system_prompt': "你是一个中文股票分析助手。仅基于用户提供的信息和上下文回答，不要编造数据。当用户问到对某个具体投资的标的的时候请你以1、概况，2、核心业务，3、最新的行情，4、财务状况，5、核心该标的的核心看点，最后是这个标的存在的风险。",
         'ai_temperature': 0.7,
         'ai_timeout': 60,
         'ai_include_stock': True,
