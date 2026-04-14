@@ -36,6 +36,16 @@ def build_openai_compatible_url(base_url):
     return f"{normalized}/v1/chat/completions"
 
 
+def _is_latin1_safe(value):
+    """判断请求头值是否可被 HTTP 头安全编码。"""
+    try:
+        str(value).encode("latin-1")
+        return True
+    except UnicodeEncodeError:
+        return False
+
+
+
 def build_request_headers(url, api_key):
     """构建更完整的请求头，降低部分网关误判概率。"""
     parsed = parse.urlparse(url)
@@ -43,9 +53,8 @@ def build_request_headers(url, api_key):
     headers = {
         **DEFAULT_HEADERS,
         "Authorization": f"Bearer {api_key}",
-        "Host": parsed.netloc,
     }
-    if origin:
+    if origin and _is_latin1_safe(origin):
         headers["Origin"] = origin
         headers["Referer"] = f"{origin}/"
     return headers
