@@ -58,23 +58,34 @@ def load_ai_settings_from_secrets():
 
 
 def apply_ai_settings_source():
-    """根据当前来源设置，将 secrets 中的 AI 配置同步到 session_state。"""
+    """检测 secrets 可用性，但不把敏感值回写到可见输入框状态。"""
     secrets_config = load_ai_settings_from_secrets()
     secrets_available = any(str(value).strip() for value in secrets_config.values())
     st.session_state.ai_secrets_available = secrets_available
+    return secrets_config
+
+
+
+def get_effective_ai_settings(secrets_config=None):
+    """按当前配置来源返回实际生效的 AI 设置。"""
+    if secrets_config is None:
+        secrets_config = load_ai_settings_from_secrets()
 
     use_secrets = st.session_state.get('ai_use_secrets', False)
-    if not use_secrets or not secrets_available:
-        return secrets_config
+    secrets_available = st.session_state.get('ai_secrets_available', False)
 
-    if str(secrets_config.get("base_url", "")).strip():
-        st.session_state.ai_base_url = str(secrets_config["base_url"])
-    if str(secrets_config.get("api_key", "")).strip():
-        st.session_state.ai_api_key = str(secrets_config["api_key"])
-    if str(secrets_config.get("model", "")).strip():
-        st.session_state.ai_model = str(secrets_config["model"])
+    if use_secrets and secrets_available:
+        return {
+            "base_url": str(secrets_config.get("base_url", "") or "").strip(),
+            "api_key": str(secrets_config.get("api_key", "") or "").strip(),
+            "model": str(secrets_config.get("model", "") or "").strip(),
+        }
 
-    return secrets_config
+    return {
+        "base_url": str(st.session_state.get('ai_base_url', '') or '').strip(),
+        "api_key": str(st.session_state.get('ai_api_key', '') or '').strip(),
+        "model": str(st.session_state.get('ai_model', '') or '').strip(),
+    }
 
 
 
@@ -637,21 +648,22 @@ def handle_ai_chat():
         return
 
     st.session_state.ai_last_error = None
+    effective_ai_settings = get_effective_ai_settings()
 
     if not user_prompt.strip():
         st.warning("请输入问题后再发送。")
         return
 
-    if not st.session_state.get('ai_base_url', '').strip():
-        st.warning("请先在侧边栏填写 API Base URL。")
+    if not effective_ai_settings['base_url']:
+        st.warning("请先在侧边栏填写 API Base URL，或启用 Streamlit secrets。")
         return
 
-    if not st.session_state.get('ai_api_key', '').strip():
-        st.warning("请先在侧边栏填写 API Key。")
+    if not effective_ai_settings['api_key']:
+        st.warning("请先在侧边栏填写 API Key，或启用 Streamlit secrets。")
         return
 
-    if not st.session_state.get('ai_model', '').strip():
-        st.warning("请先在侧边栏填写模型名称。")
+    if not effective_ai_settings['model']:
+        st.warning("请先在侧边栏填写模型名称，或启用 Streamlit secrets。")
         return
 
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -662,9 +674,9 @@ def handle_ai_chat():
     with st.spinner("AI 正在生成回答..."):
         try:
             response = chat_completion(
-                base_url=st.session_state['ai_base_url'],
-                api_key=st.session_state['ai_api_key'],
-                model=st.session_state['ai_model'],
+                base_url=effective_ai_settings['base_url'],
+                api_key=effective_ai_settings['api_key'],
+                model=effective_ai_settings['model'],
                 messages=build_ai_messages(),
                 temperature=st.session_state.get('ai_temperature', 0.7),
                 timeout=st.session_state.get('ai_timeout', 60),
@@ -819,9 +831,14 @@ def main():
                 st.caption("未检测到 secrets 配置，当前继续使用手动输入。")
 
             manual_disabled = st.session_state.get('ai_use_secrets', False) and secrets_available
-            st.text_input("API Base URL", key="ai_base_url", placeholder="例如: https://api.openai.com", disabled=manual_disabled)
-            st.text_input("API Key", key="ai_api_key", type="password", placeholder="输入服务商 API Key", disabled=manual_disabled)
-            st.text_input("模型名称", key="ai_model", placeholder="例如: gpt-4o-mini 或 deepseek-chat", disabled=manual_disabled)
+            if manual_disabled:
+                st.text_input("API Base URL", value="当前由 Streamlit secrets 提供", disabled=True, key="ai_base_url_display")
+                st.text_input("API Key", value="当前由 Streamlit secrets 提供", type="password", disabled=True, key="ai_api_key_display")
+                st.text_input("模型名称", value="当前由 Streamlit secrets 提供", disabled=True, key="ai_model_display")
+            else:
+                st.text_input("API Base URL", key="ai_base_url", placeholder="例如: https://api.openai.com")
+                st.text_input("API Key", key="ai_api_key", type="password", placeholder="输入服务商 API Key")
+                st.text_input("模型名称", key="ai_model", placeholder="例如: gpt-4o-mini 或 deepseek-chat")
             st.slider("Temperature", min_value=0.0, max_value=2.0, step=0.1, key="ai_temperature")
             st.number_input("超时时间（秒）", min_value=10, max_value=300, step=5, key="ai_timeout")
             st.text_area("System Prompt", key="ai_system_prompt", height=140)
