@@ -3,6 +3,7 @@
 # !initctl status mysql
 # !service mysql start
 from sqlalchemy import create_engine
+import streamlit as st
 
 
 _ENGINE = None
@@ -15,8 +16,10 @@ def db_connect():
         return _ENGINE
 
     # 创建数据库引擎
-    db_user = 'all_stock'
-    db_password = "SySZTdo7Ou5mmP0R"
+    db_user = st.db_user
+    # 'all_stock'
+    db_password = st.db_password
+    # "SySZTdo7Ou5mmP0R"
     db_host = 'mysql2.sqlpub.com'  # 如果您的数据库在其他主机上，请更改为相应的主机名或IP
     db_port = '3307'
     db_name = 'all_stock'  # 替换为您的数据库名
