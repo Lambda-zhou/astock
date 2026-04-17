@@ -124,16 +124,14 @@ st.set_page_config(
 
 
 def hide_streamlit_entries():
-    """隐藏右上角入口与右下角浮动入口。"""
+    """隐藏指定的 Streamlit Cloud 顶部入口元素。"""
     st.markdown(
         """
         <style>
         ._profilePreview_gzau3_63,
         [data-testid="stToolbar"] a[href*="github.com"],
-        [data-testid="stToolbar"] button[aria-label="Fork this app"],
-        [data-testid="stToolbar"] button[kind="header"]:has(svg),
-        div[data-testid="stAppViewContainer"] > div[class*="floating"],
-        iframe[title="streamlitApp"] + div {
+        [data-testid="stToolbar"] button[aria-label*="Fork"],
+        [data-testid="stToolbar"] a[aria-label*="Fork"] {
             display: none !important;
             visibility: hidden !important;
         }
