@@ -123,17 +123,32 @@ st.set_page_config(
 )
 
 
-def hide_streamlit_entries():
-    """隐藏指定的 Streamlit Cloud 顶部入口元素。"""
+def hide_streamlit_cloud_entrypoints():
+    """隐藏 Streamlit Cloud 默认源码入口与右下角浮动入口。"""
     st.markdown(
         """
         <style>
-        ._profilePreview_gzau3_63,
-        [data-testid="stToolbar"] a[href*="github.com"],
-        [data-testid="stToolbar"] button[aria-label*="Fork"],
-        [data-testid="stToolbar"] a[aria-label*="Fork"] {
+        div[data-testid="stToolbar"] {
+            visibility: hidden;
+            height: 0;
+            position: fixed;
+        }
+
+        button[kind="header"] {
+            visibility: hidden;
+        }
+
+        [data-testid="stDecoration"] {
+            display: none;
+        }
+
+        [data-testid="stStatusWidget"] {
+            display: none;
+        }
+
+        iframe[title="streamlitApp"] + div,
+        div[data-testid="stAppViewContainer"] > div[class*="floating"] {
             display: none !important;
-            visibility: hidden !important;
         }
         </style>
         """,
@@ -838,7 +853,7 @@ def main():
         if key not in st.session_state:
             st.session_state[key] = value
 
-    hide_streamlit_entries()
+    hide_streamlit_cloud_entrypoints()
     secrets_config = apply_ai_settings_source()
 
     col1, col2, col3 = st.columns([1, 1, 1])
