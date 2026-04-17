@@ -146,6 +146,7 @@ def hide_streamlit_cloud_entrypoints():
             display: none;
         }
 
+        ._profileContainer_gzau3_53,
         iframe[title="streamlitApp"] + div,
         div[data-testid="stAppViewContainer"] > div[class*="floating"] {
             display: none !important;
