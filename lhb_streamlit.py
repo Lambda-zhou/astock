@@ -122,6 +122,26 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+
+def hide_streamlit_entries():
+    """隐藏右上角入口与右下角浮动入口。"""
+    st.markdown(
+        """
+        <style>
+        ._profilePreview_gzau3_63,
+        [data-testid="stToolbar"] a[href*="github.com"],
+        [data-testid="stToolbar"] button[aria-label="Fork this app"],
+        [data-testid="stToolbar"] button[kind="header"]:has(svg),
+        div[data-testid="stAppViewContainer"] > div[class*="floating"],
+        iframe[title="streamlitApp"] + div {
+            display: none !important;
+            visibility: hidden !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
 # 安全导入模块
 def safe_import():
     """安全导入模块"""
@@ -820,6 +840,7 @@ def main():
         if key not in st.session_state:
             st.session_state[key] = value
 
+    hide_streamlit_entries()
     secrets_config = apply_ai_settings_source()
 
     col1, col2, col3 = st.columns([1, 1, 1])
