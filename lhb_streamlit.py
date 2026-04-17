@@ -122,40 +122,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-
-def hide_streamlit_cloud_entrypoints():
-    """隐藏 Streamlit Cloud 默认源码入口与右下角浮动入口。"""
-    st.markdown(
-        """
-        <style>
-        div[data-testid="stToolbar"] {
-            visibility: hidden;
-            height: 0;
-            position: fixed;
-        }
-
-        button[kind="header"] {
-            visibility: hidden;
-        }
-
-        [data-testid="stDecoration"] {
-            display: none;
-        }
-
-        [data-testid="stStatusWidget"] {
-            display: none;
-        }
-
-        ._profileContainer_gzau3_53,
-        iframe[title="streamlitApp"] + div,
-        div[data-testid="stAppViewContainer"] > div[class*="floating"] {
-            display: none !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
 # 安全导入模块
 def safe_import():
     """安全导入模块"""
@@ -854,7 +820,6 @@ def main():
         if key not in st.session_state:
             st.session_state[key] = value
 
-    hide_streamlit_cloud_entrypoints()
     secrets_config = apply_ai_settings_source()
 
     col1, col2, col3 = st.columns([1, 1, 1])
